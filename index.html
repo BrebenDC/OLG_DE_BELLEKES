@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CarnavalPass">
+<meta name="application-name" content="CarnavalPass">
+<meta name="theme-color" content="#08080a">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%2308080a'/%3E%3Crect x='30' y='55' width='120' height='70' rx='12' fill='%23dbb352'/%3E%3Ccircle cx='30' cy='90' r='12' fill='%2308080a'/%3E%3Ccircle cx='150' cy='90' r='12' fill='%2308080a'/%3E%3C/svg%3E">
+<title>CarnavalPass</title>
+
+<!-- Supabase JS SDK v2 + html5-qrcode -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<style>
+  :root{
+    --bg:#08080a; --panel:#1a1a1a; --panel2:#222;
+    --gold:#dbb352; --gold2:#f5cf5c;
+    --valid:#33c773; --invalid:#eb4242; --orange:#f39a1e;
+    --text:#f5f5f5; --muted:#9a9a9f;
+    --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    -webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior:none;
+    -webkit-user-select:none;user-select:none;touch-action:manipulation}
+  /* 16px+ voorkomt automatisch inzoomen bij invoervelden op iOS */
+  input,select,textarea,button{font-size:16px;font-family:inherit}
+  .screen{display:none;min-height:100%;padding:calc(var(--safe-t) + 20px) 20px calc(var(--safe-b) + 24px);
+    flex-direction:column;gap:24px;max-width:520px;margin:0 auto}
+  .screen.active{display:flex}
+
+  .brand{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:12px}
+  .brand svg{filter:drop-shadow(0 0 18px rgba(219,179,82,.6))}
+  .brand h1{font-family:"New York",Georgia,"Times New Roman",serif;font-size:36px;color:var(--gold);font-weight:700}
+  .brand p{color:var(--muted);font-size:15px}
+  .club{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);opacity:.75}
+
+  .panel{background:var(--panel);border-radius:20px;padding:16px;border:1px solid rgba(219,179,82,.15);
+    box-shadow:0 6px 24px rgba(0,0,0,.45)}
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:16px;
+    padding:17px 16px;font-weight:700;font-size:18px;color:#000;cursor:pointer;
+    background:linear-gradient(180deg,var(--gold2),var(--gold));box-shadow:0 4px 18px rgba(219,179,82,.35);
+    transition:transform .15s}
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.45}
+  .btn.ghost{background:var(--panel);color:var(--gold);border:1px solid rgba(219,179,82,.35);box-shadow:none;font-size:16px}
+  .btn.google{background:#fff;color:#1f1f1f;box-shadow:0 4px 18px rgba(255,255,255,.12)}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .stat{text-align:center}
+  .stat b{display:block;font-size:32px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stat span{font-size:12px;color:var(--muted)}
+
+  .userbar{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+  .userbar .email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .userbar button{background:none;border:0;color:var(--gold);font-size:14px;font-weight:600;padding:6px}
+  .net{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:99px;
+    background:rgba(51,199,115,.15);color:var(--valid)}
+  .net.off{background:rgba(243,154,30,.15);color:var(--orange)}
+  .net i{width:8px;height:8px;border-radius:50%;background:currentColor}
+
+  /* Scanner */
+  #scanWrap{position:relative;border-radius:24px;overflow:hidden;background:#000;aspect-ratio:1/1;display:none}
+  #scanWrap.on{display:block}
+  #reader{width:100%;height:100%}
+  #reader video{width:100%!important;height:100%!important;object-fit:cover}
+  #reader img,#reader__dashboard,#reader__status_span{display:none!important}
+  .frame{position:absolute;inset:14%;border-radius:28px;border:4px dashed var(--gold);pointer-events:none;
+    animation:glow 1.4s ease-in-out infinite alternate}
+  @keyframes glow{from{box-shadow:0 0 6px rgba(219,179,82,.2)}to{box-shadow:0 0 22px rgba(219,179,82,.85)}}
+  .hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:8px 16px;border-radius:99px;font-size:14px;white-space:nowrap}
+  .zoom{display:none;align-items:center;gap:12px;color:var(--muted);font-size:13px}
+  .zoom input{flex:1;accent-color:var(--gold)}
+
+  /* Resultaat */
+  .result{display:none;flex-direction:column;align-items:center;gap:12px;text-align:center;border-radius:24px;
+    padding:28px 20px;border:2px solid}
+  .result.show{display:flex;animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  .result.ok{background:rgba(51,199,115,.14);border-color:var(--valid);color:var(--valid)}
+  .result.err{background:rgba(235,66,66,.14);border-color:var(--invalid);color:var(--invalid)}
+  .result.queued{background:rgba(243,154,30,.14);border-color:var(--orange);color:var(--orange)}
+  .result h2{font-size:28px;font-weight:900;letter-spacing:.02em}
+  .result p{color:var(--text);opacity:.85;font-size:15px}
+  .result code{font-family:ui-monospace,Menlo,monospace;font-size:17px;color:var(--text);background:rgba(0,0,0,.35);
+    padding:8px 12px;border-radius:10px;word-break:break-all;-webkit-user-select:text;user-select:text}
+
+  .checking{display:none;align-items:center;justify-content:center;gap:12px;color:var(--gold);padding:18px}
+  .checking.show{display:flex}
+  .spin{width:22px;height:22px;border:3px solid rgba(219,179,82,.25);border-top-color:var(--gold);border-radius:50%;animation:s 0.8s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+
+  h3{font-size:14px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+  .list{display:flex;flex-direction:column;gap:2px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #2a2a2a;font-size:14px}
+  .row:last-child{border-bottom:0}
+  .row .c{font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .t{color:var(--muted);font-size:12px;flex-shrink:0}
+  .pill{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;flex-shrink:0}
+  .pill.ok{background:rgba(51,199,115,.15);color:var(--valid)}
+  .pill.wait{background:rgba(243,154,30,.15);color:var(--orange)}
+  .empty{color:var(--muted);font-size:14px;text-align:center;padding:8px}
+  .err-msg{color:var(--invalid);font-size:14px;text-align:center}
+  .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 20px);transform:translateX(-50%) translateY(120px);
+    background:var(--panel2);border:1px solid rgba(219,179,82,.3);color:var(--text);padding:12px 18px;border-radius:14px;
+    font-size:14px;transition:transform .3s;z-index:10;max-width:90%;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .spacer{flex:1}
+  .foot{text-align:center;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- LADEN -->
+<section id="loading" class="screen active" style="justify-content:center;align-items:center">
+  <div class="spin" style="width:40px;height:40px"></div>
+</section>
+
+<!-- LOGIN -->
+<section id="login" class="screen">
+  <div class="spacer"></div>
+  <div class="brand">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="#dbb352"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg>
+    <div class="club">OLG De Bellekes</div>
+    <h1>CarnavalPass</h1>
+    <p>Toegangscontrole carnavalswagen</p>
+  </div>
+  <div class="spacer"></div>
+  <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+    <p style="color:var(--muted);text-align:center;font-size:14px">Log in met je Google-account om te scannen.</p>
+    <button id="btnGoogle" class="btn google">
+      <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Inloggen met Google
+    </button>
+    <div id="loginErr" class="err-msg"></div>
+  </div>
+  <div class="foot">© OLG De Bellekes</div>
+</section>
+
+<!-- DASHBOARD / SCANNER -->
+<section id="dash" class="screen">
+  <div class="userbar">
+    <span class="email" id="userEmail"></span>
+    <span id="net" class="net"><i></i><span>Online</span></span>
+    <button id="btnLogout">Uitloggen</button>
+  </div>
+
+  <div class="brand" style="padding-top:0">
+    <svg width="46" height="46" viewBox="0 0 24 24" fill="#dbb352"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg>
+    <h1>CarnavalPass</h1>
+    <p>OLG De Bellekes · scanner</p>
+  </div>
+
+  <div class="stats">
+    <div class="panel stat"><b id="stToday" style="color:#fff">0</b><span>Vandaag</span></div>
+    <div class="panel stat"><b id="stSynced" style="color:var(--gold)">0</b><span>In de cloud</span></div>
+    <div class="panel stat"><b id="stQueue" style="color:var(--orange)">0</b><span>Wachtrij</span></div>
+  </div>
+
+  <div id="scanWrap">
+    <div id="reader"></div>
+    <div class="frame"></div>
+    <div class="hint">Richt de camera op de code</div>
+  </div>
+  <label class="zoom" id="zoomBox">Zoom <input type="range" id="zoom" min="1" max="1" step="0.1" value="1"></label>
+
+  <div id="checking" class="checking"><div class="spin"></div>Opslaan…</div>
+
+  <div id="result" class="result">
+    <div id="resIcon"></div>
+    <h2 id="resTitle"></h2>
+    <code id="resCode"></code>
+    <p id="resText"></p>
+  </div>
+
+  <button id="btnStart" class="btn">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>
+    <span>Start Scanner</span>
+  </button>
+  <button id="btnStop" class="btn ghost" style="display:none">Scanner stoppen</button>
+  <div id="camErr" class="err-msg"></div>
+
+  <div class="panel">
+    <h3 style="margin-bottom:8px">Recente scans</h3>
+    <div id="history" class="list"><div class="empty">Nog geen scans.</div></div>
+  </div>
+  <button id="btnSync" class="btn ghost" style="display:none">Wachtrij nu synchroniseren</button>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIGURATIE — vul hier je eigen Supabase-gegevens in
+   ============================================================ */
+const SUPABASE_URL      = "https://JOUW-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "JOUW-ANON-PUBLIC-KEY";
+
+/* ============================================================
+   Benodigde SQL in Supabase (SQL Editor → Run):
+
+   create table if not exists public.scans (
+     id          bigint generated always as identity primary key,
+     code_value  text        not null,
+     scanned_at  timestamptz not null default now(),
+     scanned_by  text        not null,
+     client_id   uuid unique            -- voorkomt dubbele inserts bij offline-sync
+   );
+   alter table public.scans enable row level security;
+   create policy "ingelogd mag invoegen" on public.scans
+     for insert to authenticated
+     with check (scanned_by = auth.jwt() ->> 'email');
+   create policy "ingelogd mag eigen scans lezen" on public.scans
+     for select to authenticated
+     using (scanned_by = auth.jwt() ->> 'email');
+   ============================================================ */
+
+const QUEUE_KEY   = "carnavalpass.offlineQueue";
+const HISTORY_KEY = "carnavalpass.history";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,          // sessie blijft bewaard in localStorage
+    autoRefreshToken: true,        // token wordt automatisch vernieuwd
+    detectSessionInUrl: true,      // pikt de sessie op na Google-redirect
+    storage: window.localStorage,
+    storageKey: "carnavalpass.auth",
+    flowType: "pkce"
+  }
+});
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+let currentUser = null;
+let scanner = null;
+let scanLocked = false;       // blokkeert dubbele detecties
+let syncing = false;
+
+function show(screen){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(screen).classList.add("active");
+}
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+function load(key){ try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } }
+function save(key, v){ try { localStorage.setItem(key, JSON.stringify(v)); } catch {} }
+function uuid(){
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+}
+function fmtTime(iso){
+  const d = new Date(iso);
+  return d.toLocaleString("nl-BE", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+function vibrate(p){ try { navigator.vibrate && navigator.vibrate(p); } catch {} }
+
+/* Is een fout een netwerkfout (→ bufferen) of een echte weigering (→ rood)? */
+function isNetworkError(err){
+  if (!navigator.onLine) return true;
+  if (!err) return false;
+  const m = (err.message || String(err)).toLowerCase();
+  return err.name === "TypeError" || m.includes("failed to fetch") || m.includes("network") ||
+         m.includes("load failed") || m.includes("timeout") || m.includes("aborted") ||
+         err.status === 0 || err.code === "" ;
+}
+function withTimeout(promise, ms){
+  return Promise.race([promise, new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms))]);
+}
+
+/* ============================================================
+   AUTHENTICATIE
+   ============================================================ */
+$("btnGoogle").addEventListener("click", async () => {
+  $("loginErr").textContent = "";
+  const redirectTo = window.location.origin + window.location.pathname;
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo, queryParams: { prompt: "select_account" } }
+  });
+  if (error) $("loginErr").textContent = "Inloggen mislukt: " + error.message;
+});
+
+$("btnLogout").addEventListener("click", async () => {
+  if (load(QUEUE_KEY).length && !confirmLogout()) return;
+  await stopScanner();
+  await sb.auth.signOut();
+});
+function confirmLogout(){
+  return window.confirm("Er staan nog scans in de wachtrij. Toch uitloggen? (Ze blijven bewaard en worden later verzonden.)");
+}
+
+sb.auth.onAuthStateChange((_event, session) => applySession(session));
+
+async function applySession(session){
+  if (session && session.user){
+    currentUser = session.user;
+    $("userEmail").textContent = currentUser.email || "";
+    // URL opschonen na OAuth-redirect
+    if (location.search.includes("code=") || location.hash.includes("access_token")){
+      history.replaceState(null, "", location.pathname);
+    }
+    show("dash");
+    renderAll();
+    flushQueue();
+  } else {
+    currentUser = null;
+    show("login");
+  }
+}
+
+(async function init(){
+  const { data } = await sb.auth.getSession();
+  applySession(data.session);
+})();
+
+/* ============================================================
+   CAMERA SCANNER
+   ============================================================ */
+const FORMATS = window.Html5QrcodeSupportedFormats ? [
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39
+] : undefined;
+
+$("btnStart").addEventListener("click", startScanner);
+$("btnStop").addEventListener("click", stopScanner);
+
+async function startScanner(){
+  if (!currentUser) return;
+  $("camErr").textContent = "";
+  $("result").className = "result";
+  $("btnStart").style.display = "none";
+  $("scanWrap").classList.add("on");
+  scanLocked = false;
+
+  try {
+    if (!scanner){
+      scanner = new Html5Qrcode("reader", {
+        formatsToSupport: FORMATS,
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        verbose: false
+      });
+    }
+    await scanner.start(
+      {
+        facingMode: { exact: "environment" }
+      },
+      {
+        fps: 15,
+        qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.72); return { width: s, height: s }; },
+        aspectRatio: 1.0,
+        disableFlip: true,
+        videoConstraints: {
+          facingMode: "environment",
+          width:  { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [{ focusMode: "continuous" }]
+        }
+      },
+      onScanSuccess,
+      () => {} // per-frame "niet gevonden" negeren
+    ).catch(async e => {
+      // Sommige toestellen weigeren "exact" → val terug op gewone achtercamera
+      if (String(e).includes("Overconstrained") || String(e).includes("NotFound")){
+        await scanner.start({ facingMode: "environment" },
+          { fps: 15, qrbox: 250, aspectRatio: 1.0 }, onScanSuccess, () => {});
+      } else throw e;
+    });
+    $("btnStop").style.display = "flex";
+    setupZoom();
+  } catch (e) {
+    $("scanWrap").classList.remove("on");
+    $("btnStart").style.display = "flex";
+    const msg = String(e && e.message || e);
+    $("camErr").textContent = msg.includes("Permission") || msg.includes("NotAllowed")
+      ? "Cameratoegang geweigerd. Sta de camera toe in Instellingen → Safari → Camera."
+      : "Camera kon niet starten: " + msg;
+  }
+}
+
+/* Zoom + autofocus via MediaStreamTrack (waar ondersteund) */
+function setupZoom(){
+  $("zoomBox").style.display = "none";
+  try {
+    const video = document.querySelector("#reader video");
+    const track = video && video.srcObject && video.srcObject.getVideoTracks()[0];
+    if (!track || !track.getCapabilities) return;
+    const caps = track.getCapabilities();
+    if (caps.focusMode && caps.focusMode.includes("continuous")){
+      track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
+    }
+    if (caps.zoom){
+      const z = $("zoom");
+      z.min = caps.zoom.min; z.max = Math.min(caps.zoom.max, 5); z.step = caps.zoom.step || 0.1;
+      const start = Math.min(Math.max(1.5, caps.zoom.min), z.max);
+      z.value = start;
+      track.applyConstraints({ advanced: [{ zoom: start }] }).catch(() => {});
+      z.oninput = () => track.applyConstraints({ advanced: [{ zoom: Number(z.value) }] }).catch(() => {});
+      $("zoomBox").style.display = "flex";
+    }
+  } catch {}
+}
+
+async function stopScanner(){
+  $("zoomBox").style.display = "none";
+  $("btnStop").style.display = "none";
+  if (scanner){
+    try { if (scanner.isScanning) await scanner.stop(); } catch {}
+    try { scanner.clear(); } catch {}
+  }
+  $("scanWrap").classList.remove("on");
+  $("btnStart").style.display = "flex";
+}
+
+async function onScanSuccess(decodedText){
+  if (scanLocked) return;          // direct blokkeren → geen dubbele scans
+  scanLocked = true;
+  vibrate(60);
+  try { scanner.pause(true); } catch {}
+  await stopScanner();
+  $("btnStart").style.display = "none";
+  await handleCode(decodedText.trim());
+}
+
+/* ============================================================
+   OPSLAAN IN SUPABASE + OFFLINE BUFFER
+   ============================================================ */
+async function insertScan(scan){
+  const { error } = await withTimeout(
+    sb.from("scans").insert({
+      code_value: scan.code_value,
+      scanned_at: scan.scanned_at,
+      scanned_by: scan.scanned_by,
+      client_id:  scan.client_id
+    }),
+    10000
+  );
+  if (error){
+    // 23505 = unique violation → deze scan staat al in de cloud: beschouwen als geslaagd
+    if (error.code === "23505") return;
+    throw error;
+  }
+}
+
+async function handleCode(code){
+  const scan = {
+    client_id:  uuid(),
+    code_value: code,
+    scanned_at: new Date().toISOString(),
+    scanned_by: currentUser.email
+  };
+  $("checking").classList.add("show");
+
+  try {
+    if (!navigator.onLine) throw new Error("offline");
+    await insertScan(scan);
+    addHistory(scan, "synced");
+    showResult("ok", code);
+  } catch (err) {
+    if (isNetworkError(err) || err.message === "offline"){
+      const q = load(QUEUE_KEY); q.push(scan); save(QUEUE_KEY, q);
+      addHistory(scan, "queued");
+      showResult("queued", code);
+    } else {
+      showResult("err", code, err.message || "Onbekende fout");
+    }
+  } finally {
+    $("checking").classList.remove("show");
+    renderAll();
+  }
+}
+
+function showResult(kind, code, detail){
+  const r = $("result");
+  const icons = {
+    ok:     '<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>',
+    err:    '<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    queued: '<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><path d="M12 20h.01"/></svg>'
+  };
+  const titles = { ok: "OPGESLAGEN", err: "MISLUKT", queued: "OFFLINE BEWAARD" };
+  const texts = {
+    ok: "De scan staat veilig in de cloud.",
+    err: "De cloud weigerde de scan: " + (detail || "") + ". Probeer opnieuw.",
+    queued: "Geen verbinding. De scan staat in de wachtrij en wordt automatisch verzonden zodra de wifi terug is."
+  };
+  r.className = "result show " + kind;
+  $("resIcon").innerHTML = icons[kind];
+  $("resTitle").textContent = titles[kind];
+  $("resCode").textContent = code;
+  $("resText").textContent = texts[kind];
+  vibrate(kind === "ok" ? [40, 40, 40] : [200, 80, 200]);
+
+  const btn = $("btnStart");
+  btn.querySelector("span").textContent = "Volgende Scannen";
+  btn.style.display = "flex";
+}
+
+/* Wachtrij naar de cloud sturen */
+async function flushQueue(){
+  if (syncing || !currentUser || !navigator.onLine) return;
+  let q = load(QUEUE_KEY);
+  if (!q.length) return;
+  syncing = true;
+  let sent = 0;
+  try {
+    for (const scan of [...q]){
+      try {
+        await insertScan(scan);
+        q = load(QUEUE_KEY).filter(s => s.client_id !== scan.client_id);
+        save(QUEUE_KEY, q);
+        markHistory(scan.client_id, "synced");
+        sent++;
+      } catch (err) {
+        if (isNetworkError(err)) break; // nog steeds offline → later opnieuw
+        // permanente fout: in de wachtrij laten, volgende proberen
+      }
+    }
+  } finally {
+    syncing = false;
+    renderAll();
+    if (sent) toast(`✅ ${sent} offline scan${sent > 1 ? "s" : ""} verzonden naar de cloud`);
+  }
+}
+
+window.addEventListener("online",  () => { updateNet(); flushQueue(); });
+window.addEventListener("offline", updateNet);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) flushQueue(); });
+setInterval(flushQueue, 20000);
+$("btnSync").addEventListener("click", flushQueue);
+
+/* ============================================================
+   UI: geschiedenis & statistieken
+   ============================================================ */
+function addHistory(scan, status){
+  const h = load(HISTORY_KEY);
+  h.unshift({ ...scan, status });
+  save(HISTORY_KEY, h.slice(0, 200));
+}
+function markHistory(id, status){
+  const h = load(HISTORY_KEY);
+  const it = h.find(x => x.client_id === id);
+  if (it){ it.status = status; save(HISTORY_KEY, h); }
+}
+function updateNet(){
+  const on = navigator.onLine;
+  $("net").className = "net" + (on ? "" : " off");
+  $("net").querySelector("span").textContent = on ? "Online" : "Offline";
+}
+function renderAll(){
+  updateNet();
+  const mine = load(HISTORY_KEY).filter(s => !currentUser || s.scanned_by === currentUser.email);
+  const queue = load(QUEUE_KEY);
+  const today = new Date().toDateString();
+  $("stToday").textContent  = mine.filter(s => new Date(s.scanned_at).toDateString() === today).length;
+  $("stSynced").textContent = mine.filter(s => s.status === "synced").length;
+  $("stQueue").textContent  = queue.length;
+  $("btnSync").style.display = queue.length ? "flex" : "none";
+
+  const list = $("history");
+  if (!mine.length){ list.innerHTML = '<div class="empty">Nog geen scans.</div>'; return; }
+  list.innerHTML = mine.slice(0, 15).map(s => `
+    <div class="row">
+      <span class="c">${esc(s.code_value)}</span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <span class="t">${fmtTime(s.scanned_at)}</span>
+        <span class="pill ${s.status === "synced" ? "ok" : "wait"}">${s.status === "synced" ? "Cloud" : "Wachtrij"}</span>
+      </span>
+    </div>`).join("");
+}
+
+/* Pinch-zoom & dubbeltik-zoom blokkeren (iOS negeert user-scalable soms) */
+document.addEventListener("gesturestart", e => e.preventDefault(), { passive: false });
+let lastTouch = 0;
+document.addEventListener("touchend", e => {
+  const now = Date.now();
+  if (now - lastTouch < 300) e.preventDefault();
+  lastTouch = now;
+}, { passive: false });
+</script>
+</body>
+</html>
