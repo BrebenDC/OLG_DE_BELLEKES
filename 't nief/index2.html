@@ -6,12 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Frituur Pass">
+<meta name="apple-mobile-web-app-title" content="CarnavalPass">
 <meta name="application-name" content="CarnavalPass">
 <meta name="theme-color" content="#08080a">
 <meta name="format-detection" content="telephone=no">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%2308080a'/%3E%3Cpath fill='%23dbb352' d='M25 60a10 10 0 0 1 10-10h110a10 10 0 0 1 10 10v15a15 15 0 0 0 0 30v15a10 10 0 0 1-10 10H35a10 10 0 0 1-10-10v-15a15 15 0 0 0 0-30z'/%3E%3C/svg%3E">
-<title>CarnavalPass Frituur</title>
+<title>CarnavalPass</title>
 <style>
 :root{
   --bg:#08080a; --panel:#1a1a1a; --panel2:#242424; --line:#2c2c2e;
@@ -198,7 +198,7 @@ button{cursor:pointer}
   <form class="center" id="loginForm" autocomplete="on">
     <svg class="logo" width="64" height="64" viewBox="0 0 24 24" fill="#dbb352"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg>
     <div class="title">CarnavalPass</div>
-    <div class="club">OLG De Bellekes · Frituur 't Nief Patatje</div>
+    <div class="club">OLG De Bellekes</div>
     <div class="seg" id="authSeg">
       <button type="button" data-mode="in" class="on">Inloggen</button>
       <button type="button" data-mode="up">Account maken</button>
@@ -250,7 +250,7 @@ button{cursor:pointer}
         <div class="hero">
           <svg class="logo" width="46" height="46" viewBox="0 0 24 24" fill="#dbb352"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg>
           <div class="title">CarnavalPass</div>
-          <div class="sub">Frituur 't Nief Patatje · €15-kaarten</div>
+          <div class="sub">Toegangscontrole carnavalswagen · max €15 per kaart</div>
         </div>
         <div class="stats">
           <div class="panel stat"><b id="stTotal" style="color:#fff">0</b><span>Totaal</span></div>
@@ -646,7 +646,7 @@ async function shareQR(c){
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, out.width, out.height);
   ctx.imageSmoothingEnabled = false; ctx.drawImage(src, pad, pad);
   const blob = await new Promise(r => out.toBlob(r, "image/png"));
-  const name = `Frituur-${String(c.number).padStart(3, "0")}.png`;
+  const name = `CarnavalPass-${String(c.number).padStart(3, "0")}.png`;
   const file = new File([blob], name, { type: "image/png" });
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })){
