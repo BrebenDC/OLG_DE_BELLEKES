@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Frituur Pass">
+<meta name="application-name" content="CarnavalPass">
+<meta name="theme-color" content="#08080a">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%2308080a'/%3E%3Cpath fill='%23dbb352' d='M25 60a10 10 0 0 1 10-10h110a10 10 0 0 1 10 10v15a15 15 0 0 0 0 30v15a10 10 0 0 1-10 10H35a10 10 0 0 1-10-10v-15a15 15 0 0 0 0-30z'/%3E%3C/svg%3E">
+<title>CarnavalPass Frituur</title>
+<style>
+:root{
+  --bg:#08080a; --panel:#1a1a1a; --panel2:#242424; --line:#2c2c2e;
+  --gold:#dbb352; --gold2:#f2cd66;
+  --valid:#33c773; --invalid:#eb4242; --orange:#ff9f0a;
+  --text:#f5f5f7; --muted:#98989f;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  --tabh:64px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation}
+/* 16px+ voorkomt automatisch inzoomen op iOS */
+input,button{font-size:16px;font-family:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.serif{font-family:"New York",Georgia,"Times New Roman",serif}
+
+/* ---------- schermen ---------- */
+.screen{display:none;min-height:100%;flex-direction:column}
+.screen.active{display:flex}
+.center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;
+  padding:calc(var(--safe-t) + 28px) 28px calc(var(--safe-b) + 28px);max-width:480px;margin:0 auto;width:100%}
+
+/* ---------- algemene elementen ---------- */
+.logo{filter:drop-shadow(0 0 18px rgba(219,179,82,.6))}
+.title{font-family:"New York",Georgia,serif;font-weight:700;color:var(--gold);font-size:38px;text-align:center}
+.sub{color:var(--muted);font-size:15px;text-align:center}
+.club{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);opacity:.75}
+.panel{background:var(--panel);border-radius:20px;padding:16px;border:1px solid rgba(219,179,82,.15);
+  box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.field{width:100%;background:var(--panel);border:1px solid transparent;border-radius:14px;padding:16px;outline:none;
+  -webkit-user-select:text;user-select:text}
+.field:focus{border-color:rgba(219,179,82,.5)}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:16px;
+  padding:16px;font-weight:700;font-size:17px;color:#000;
+  background:linear-gradient(180deg,var(--gold),rgba(219,179,82,.75));box-shadow:0 4px 14px rgba(219,179,82,.35);
+  transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;transform:none}
+.btn.green{background:linear-gradient(180deg,var(--valid),rgba(51,199,115,.75));box-shadow:0 4px 14px rgba(51,199,115,.35)}
+.btn.google{background:#fff;color:#1f1f1f;box-shadow:0 4px 14px rgba(255,255,255,.1)}
+.btn.big{font-size:20px;padding:18px}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;width:100%}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.err{color:var(--invalid);font-size:13px;text-align:center}
+.err:empty{display:none}
+.ok{color:var(--valid);font-size:14px;text-align:center;background:rgba(51,199,115,.12);padding:12px;border-radius:12px;width:100%}
+.seg{display:flex;width:100%;background:var(--panel);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;padding:10px;border-radius:9px;font-size:15px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--gold);color:#000}
+.link{background:none;border:0;color:var(--gold);font-size:14px;padding:4px}
+.spin{width:22px;height:22px;border:3px solid rgba(219,179,82,.25);border-top-color:var(--gold);border-radius:50%;
+  animation:spin .8s linear infinite}
+.spin.dark{border-color:rgba(0,0,0,.2);border-top-color:#000}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- app met tabbalk ---------- */
+#app{height:100%}
+.tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(var(--safe-t) + 12px) 20px calc(var(--safe-b) + var(--tabh) + 24px)}
+.tab.active{display:block}
+.inner{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.navtitle{font-size:34px;font-weight:800;padding-top:8px}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;
+  padding:6px 4px calc(var(--safe-b) + 4px);background:rgba(18,18,20,.88);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line)}
+.tabbar button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:#8e8e93;font-size:10px;font-weight:500;padding:4px 0}
+.tabbar button svg{width:26px;height:26px}
+.tabbar button.on{color:var(--gold)}
+
+/* Start */
+.hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:24px}
+.hero .title{font-size:36px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{text-align:center;display:flex;flex-direction:column;gap:6px}
+.stat b{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+
+/* Scanner */
+#tab-scan{padding:0;position:fixed;inset:0;background:#000;overflow:hidden}
+#reader{position:absolute;inset:0}
+#reader video{width:100%!important;height:100%!important;object-fit:cover}
+#reader img,#reader__dashboard,#reader__status_span,#reader__header_message{display:none!important}
+#reader__scan_region{height:100%}
+.scanframe{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  pointer-events:none;padding-bottom:var(--tabh)}
+.scanframe .box{width:260px;height:260px;border-radius:28px;border:4px dashed var(--gold);animation:glow 1.4s ease-in-out infinite alternate}
+@keyframes glow{from{box-shadow:0 0 6px rgba(219,179,82,.2)}to{box-shadow:0 0 22px rgba(219,179,82,.8)}}
+.capsule{background:rgba(30,30,30,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  padding:8px 16px;border-radius:99px;font-size:15px;font-weight:500}
+.zoom{position:absolute;left:24px;right:24px;bottom:calc(var(--safe-b) + var(--tabh) + 20px);display:flex;gap:12px;
+  align-items:center;font-size:13px;color:#ddd;pointer-events:auto}
+.zoom input{flex:1;accent-color:var(--gold)}
+.camoff{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:24px 40px calc(var(--tabh) + 24px);text-align:center;background:var(--bg)}
+.camoff h2{font-size:20px}
+.camoff p{color:var(--muted)}
+.checking{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;
+  gap:12px;padding:24px 28px;border-radius:20px;background:rgba(30,30,30,.75);backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);color:var(--muted);z-index:5}
+
+.result{position:absolute;inset:0;z-index:6;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column;
+  align-items:center;gap:16px;padding:calc(var(--safe-t) + 24px) 24px calc(var(--safe-b) + var(--tabh) + 24px);
+  animation:pop .35s ease}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.result > *{width:100%;max-width:480px}
+.result .icon{width:auto;filter:drop-shadow(0 0 20px currentColor)}
+.result h2{font-size:30px;font-weight:900;text-align:center;font-family:ui-rounded,-apple-system,sans-serif}
+.result .txt{color:var(--muted);text-align:center}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-weight:600}
+.amount{display:flex;align-items:center;gap:8px;padding:0 20px;background:var(--panel);border-radius:16px;
+  border:1px solid rgba(219,179,82,.35)}
+.amount span{font-size:24px;font-weight:600;color:var(--gold)}
+.amount input{flex:1;min-width:0;background:none;border:0;outline:none;text-align:center;font-size:32px;font-weight:800;
+  padding:12px 0;-webkit-user-select:text;user-select:text}
+.hint{font-size:12px;color:var(--muted);text-align:center}
+.hint.bad{color:var(--invalid);font-size:13px}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.chips button{background:var(--panel);border:1px solid rgba(219,179,82,.25);border-radius:99px;padding:6px 12px;
+  font-size:13px;font-weight:600;color:var(--gold)}
+.chips button:disabled{opacity:.35}
+.grow{flex:1}
+
+/* Lijsten (Kaarten / Historie / Instellingen) */
+.search{position:relative}
+.search input{padding-left:40px;background:var(--panel2)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted)}
+.list{background:var(--panel);border-radius:14px;overflow:hidden}
+.item{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);width:100%;
+  background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.item:last-child{border-bottom:0}
+.item .main{flex:1;min-width:0}
+.item .h{font-weight:600;font-variant-numeric:tabular-nums;font-size:17px}
+.item .s{font-size:12px;color:var(--muted);margin-top:3px}
+.item .r{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:12px;font-weight:600}
+.money{font-variant-numeric:tabular-nums;font-weight:500;font-size:15px}
+.chev{color:#555;font-size:20px}
+.pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px}
+.pill.valid{color:var(--valid);background:rgba(51,199,115,.15)}
+.pill.used{color:var(--invalid);background:rgba(235,66,66,.15)}
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted);padding:48px 0;text-align:center}
+.empty b{color:var(--text);font-size:20px}
+.section{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:0 16px;margin-bottom:-12px}
+.foot{font-size:13px;color:var(--muted);line-height:1.45}
+.lbl{display:flex;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.lbl:last-child{border-bottom:0}
+.lbl span:last-child{color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis}
+
+/* Kaart-detail */
+.back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--gold);font-size:17px;padding:6px 0}
+.detail{display:flex;flex-direction:column;align-items:center;gap:18px}
+.detail .title{font-size:40px}
+.qr{background:#fff;padding:16px;border-radius:16px;box-shadow:0 0 30px rgba(219,179,82,.3);line-height:0}
+.qr img,.qr canvas{width:260px;height:260px;image-rendering:pixelated}
+.detail .panel{width:100%}
+.detail .foot{text-align:center}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + var(--tabh) + 16px);transform:translateX(-50%) translateY(200px);
+  background:var(--panel2);border:1px solid rgba(219,179,82,.3);padding:12px 18px;border-radius:14px;font-size:14px;
+  transition:transform .3s;z-index:50;max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- ================= LADEN ================= -->
+<section id="s-loading" class="screen active">
+  <div class="center"><div class="spin" style="width:40px;height:40px"></div></div>
+</section>
+
+<!-- ================= INLOGGEN ================= -->
+<section id="s-login" class="screen">
+  <form class="center" id="loginForm" autocomplete="on">
+    <svg class="logo" width="64" height="64" viewBox="0 0 24 24" fill="#dbb352"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg>
+    <div class="title">CarnavalPass</div>
+    <div class="club">OLG De Bellekes · Frituur 't Nief Patatje</div>
+    <div class="seg" id="authSeg">
+      <button type="button" data-mode="in" class="on">Inloggen</button>
+      <button type="button" data-mode="up">Account maken</button>
+    </div>
+    <input class="field hidden" id="fullname" type="text" placeholder="Naam" autocomplete="name">
+    <input class="field" id="email" type="email" placeholder="E-mail" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+    <input class="field" id="password" type="password" placeholder="Wachtwoord" autocomplete="current-password" required>
+    <input class="field hidden" id="password2" type="password" placeholder="Herhaal wachtwoord" autocomplete="new-password">
+    <div class="err" id="loginErr"></div>
+    <div class="ok hidden" id="loginOk"></div>
+    <button class="btn" id="btnLogin" type="submit" disabled>Inloggen</button>
+    <button class="link" id="btnForgot" type="button">Wachtwoord vergeten?</button>
+    <div class="or">of</div>
+    <button class="btn google" id="btnGoogle" type="button">
+      <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      <span id="googleLabel">Inloggen met Google</span>
+    </button>
+  </form>
+</section>
+
+<!-- ================= NIEUW WACHTWOORD ================= -->
+<section id="s-newpass" class="screen">
+  <form class="center" id="newPassForm">
+    <div class="title" style="font-size:30px">Nieuw wachtwoord</div>
+    <input class="field" id="newPass" type="password" placeholder="Nieuw wachtwoord (min. 6 tekens)" autocomplete="new-password">
+    <div class="err" id="newPassErr"></div>
+    <button class="btn" type="submit">Wachtwoord opslaan</button>
+  </form>
+</section>
+
+<!-- ================= GEEN TOEGANG ================= -->
+<section id="s-noaccess" class="screen">
+  <div class="center">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="#eb4242"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>
+    <h2 style="font-size:22px">Geen beheerdersrechten</h2>
+    <p class="sub">Dit account heeft geen toegang tot CarnavalPass.</p>
+    <p class="sub" id="noaccessEmail" style="font-size:13px"></p>
+    <button class="btn" id="btnLogout2" style="margin-top:8px">Uitloggen</button>
+  </div>
+</section>
+
+<!-- ================= APP (TABS) ================= -->
+<section id="s-app" class="screen">
+  <div id="app">
+
+    <!-- START -->
+    <div class="tab active" id="tab-home">
+      <div class="inner">
+        <div class="hero">
+          <svg class="logo" width="46" height="46" viewBox="0 0 24 24" fill="#dbb352"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg>
+          <div class="title">CarnavalPass</div>
+          <div class="sub">Frituur 't Nief Patatje · €15-kaarten</div>
+        </div>
+        <div class="stats">
+          <div class="panel stat"><b id="stTotal" style="color:#fff">0</b><span>Totaal</span></div>
+          <div class="panel stat"><b id="stAvail" style="color:var(--gold)">0</b><span>Met saldo</span></div>
+          <div class="panel stat"><b id="stUsed" style="color:var(--invalid)">0</b><span>Opgebruikt</span></div>
+        </div>
+        <button class="btn big" data-goto="scan">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v2M7 15v2h2"/></svg>
+          QR-code scannen
+        </button>
+        <div class="err" id="homeErr"></div>
+      </div>
+    </div>
+
+    <!-- SCAN -->
+    <div class="tab" id="tab-scan">
+      <div id="reader"></div>
+      <div class="scanframe" id="scanFrame">
+        <div class="box"></div>
+        <div class="capsule">Richt de camera op de QR-code</div>
+      </div>
+      <label class="zoom hidden" id="zoomBox">Zoom <input type="range" id="zoom" min="1" max="1" step="0.1" value="1"></label>
+
+      <div class="camoff hidden" id="camOff">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="#dbb352"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"/></svg>
+        <h2>Cameratoegang nodig</h2>
+        <p id="camMsg">Sta de camera toe om QR-codes te scannen. Op iPhone: Instellingen → Safari → Camera → Sta toe.</p>
+        <button class="btn" id="btnCamRetry">Opnieuw proberen</button>
+      </div>
+
+      <div class="checking hidden" id="checking"><div class="spin"></div>Controleren…</div>
+      <div class="result hidden" id="result"></div>
+    </div>
+
+    <!-- KAARTEN -->
+    <div class="tab" id="tab-cards">
+      <div class="inner" id="cardsListView">
+        <div class="navtitle">Kaarten</div>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input class="field" id="cardSearch" type="search" inputmode="numeric" placeholder="Zoek op kaartnummer">
+        </div>
+        <div id="cardsList"></div>
+      </div>
+      <div class="inner hidden" id="cardDetailView"></div>
+    </div>
+
+    <!-- HISTORIE -->
+    <div class="tab" id="tab-history">
+      <div class="inner">
+        <div class="navtitle">Historie</div>
+        <div id="historyList"></div>
+      </div>
+    </div>
+
+    <!-- INSTELLINGEN -->
+    <div class="tab" id="tab-settings">
+      <div class="inner">
+        <div class="navtitle">Instellingen</div>
+        <div class="section">Account</div>
+        <div class="list">
+          <div class="lbl"><span>Ingelogd als</span><span id="setEmail">—</span></div>
+        </div>
+        <div class="section">Informatie</div>
+        <div class="list">
+          <div class="lbl"><span>Opslag</span><span>Supabase (cloud)</span></div>
+          <div class="lbl"><span>Versie</span><span>1.0 (web)</span></div>
+          <div class="lbl"><span>Maximum per kaart</span><span>€15,00</span></div>
+          <div class="lbl"><span>Kaarten</span><span id="setCount">10</span></div>
+        </div>
+        <div class="section">Over</div>
+        <div class="panel foot">Elke kaart start met €15,00. Bij het scannen voer je het bedrag in dat van de kaart wordt afgetrokken (max €15). Een kaart kan meerdere keren gebruikt worden tot het saldo op is. Alle kaarten staan in de cloud, dus je kunt met meerdere telefoons tegelijk scannen. Er is wel internet nodig: bij een verbindingsfout wordt een kaart nooit goedgekeurd.</div>
+        <button class="btn" id="btnLogout">Uitloggen</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <button data-tab="home" class="on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg>Start</button>
+    <button data-tab="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v2M7 15v2h2"/></svg>Scan</button>
+    <button data-tab="cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="9" width="18" height="12" rx="2"/><path d="M5 6h14M7 3h10"/></svg>Kaarten</button>
+    <button data-tab="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historie</button>
+    <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Instellingen</button>
+  </nav>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURATIE
+   ===================================================================== */
+const SUPABASE_URL      = "https://asywctkpptzrenkcixck.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzeXdjdGtwcHR6cmVua2NpeGNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMTY0MzUsImV4cCI6MjEwODY5MjQzNX0.750M0bnO1wLZw7YVHMMj6OMOnNdSoSrXnaAxDerji3k";
+// De database maak je aan met supabase.sql én supabase2.sql (SQL Editor → Run).
+
+const MAX_CENTS   = 1500;                       // €15,00
+const QR_PREFIX   = "carnavalpass://frituur/";
+const TOTAL_CARDS = 10;
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+          storage: window.localStorage, storageKey: "carnavalpass.auth", flowType: "pkce" }
+});
+
+/* =====================================================================
+   HULPFUNCTIES
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const euro = c => "€" + (c / 100).toFixed(2).replace(".", ",");
+const label = n => String(n).padStart(3, "0") + "/" + String(TOTAL_CARDS).padStart(3, "0");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmtDate = (iso, secs) => iso ? new Date(iso).toLocaleString("nl-BE",
+  { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit", ...(secs ? { second:"2-digit" } : {}) }) : "—";
+function show(id){ document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id)); }
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600); }
+function haptic(kind){ try { navigator.vibrate && navigator.vibrate(kind === "success" ? [30,40,30] : kind === "warning" ? 120 : [180,80,180]); } catch {} }
+function timeout(p, ms = 12000){ return Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms))]); }
+
+/** Roept een databasefunctie aan. Gooit "forbidden" of een netwerkfout. */
+async function rpc(name, args){
+  const { data, error } = await timeout(sb.rpc(name, args));
+  if (error){
+    if (error.code === "42501" || /forbidden/i.test(error.message)) throw new Error("forbidden");
+    throw error;
+  }
+  return data;
+}
+
+/** Zelfde controle als TokenParser in de iPhone-app */
+function tokenFrom(code){
+  if (!code.startsWith(QR_PREFIX)) return null;
+  const t = code.slice(QR_PREFIX.length);
+  return /^[A-Za-z0-9_-]{43}$/.test(t) ? t : null;
+}
+
+/* =====================================================================
+   INLOGGEN
+   ===================================================================== */
+let user = null;
+
+let authMode = "in";              // "in" = inloggen, "up" = account maken
+let recovering = false;            // gebruiker kwam via 'wachtwoord vergeten'-mail
+const appUrl = () => location.origin + location.pathname;
+
+function setMode(mode){
+  authMode = mode;
+  const up = mode === "up";
+  document.querySelectorAll("#authSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
+  $("fullname").classList.toggle("hidden", !up);
+  $("password2").classList.toggle("hidden", !up);
+  $("btnForgot").classList.toggle("hidden", up);
+  $("password").autocomplete = up ? "new-password" : "current-password";
+  $("password").placeholder = up ? "Wachtwoord (min. 6 tekens)" : "Wachtwoord";
+  $("googleLabel").textContent = up ? "Registreren met Google" : "Inloggen met Google";
+  $("loginErr").textContent = ""; $("loginOk").classList.add("hidden");
+  updateLoginBtn();
+}
+document.querySelectorAll("#authSeg button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+
+function updateLoginBtn(){
+  const btn = $("btnLogin");
+  btn.textContent = authMode === "up" ? "Account maken" : "Inloggen";
+  btn.disabled = !$("email").value || !$("password").value || (authMode === "up" && !$("password2").value);
+}
+["email", "password", "password2"].forEach(id => $(id).addEventListener("input", updateLoginBtn));
+
+function okMsg(text){ const o = $("loginOk"); o.textContent = text; o.classList.remove("hidden"); }
+
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("btnLogin");
+  const email = $("email").value.trim(), pw = $("password").value;
+  $("loginErr").textContent = ""; $("loginOk").classList.add("hidden");
+
+  if (authMode === "up"){
+    if (pw.length < 6) return $("loginErr").textContent = "Wachtwoord moet minstens 6 tekens hebben.";
+    if (pw !== $("password2").value) return $("loginErr").textContent = "De wachtwoorden zijn niet gelijk.";
+  }
+  btn.disabled = true; btn.innerHTML = '<div class="spin dark"></div>';
+
+  if (authMode === "in"){
+    const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+    updateLoginBtn();
+    if (error){
+      $("loginErr").textContent = /confirm/i.test(error.message)
+        ? "Je e-mailadres is nog niet bevestigd. Klik eerst op de link in je mailbox."
+        : "Inloggen mislukt. Controleer e-mail, wachtwoord en verbinding.";
+    }
+    return;
+  }
+
+  const { data, error } = await sb.auth.signUp({
+    email, password: pw,
+    options: { emailRedirectTo: appUrl(), data: { full_name: $("fullname").value.trim() } }
+  });
+  updateLoginBtn();
+  if (error){
+    $("loginErr").textContent = /registered|exists/i.test(error.message)
+      ? "Er bestaat al een account met dit e-mailadres. Kies 'Inloggen'."
+      : "Account maken mislukt: " + error.message;
+    return;
+  }
+  // Supabase geeft geen fout bij een bestaand adres, maar een gebruiker zonder identities
+  if (data.user && data.user.identities && data.user.identities.length === 0){
+    $("loginErr").textContent = "Er bestaat al een account met dit e-mailadres. Kies 'Inloggen'.";
+    return;
+  }
+  if (!data.session){
+    setMode("in");
+    okMsg("Account gemaakt! Open de bevestigingsmail en tik op de link. Daarna kun je hier inloggen.");
+  }
+  // Met sessie (e-mailbevestiging uitgezet in Supabase) logt onAuthStateChange je direct in.
+});
+
+$("btnForgot").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  $("loginErr").textContent = ""; $("loginOk").classList.add("hidden");
+  if (!email) return $("loginErr").textContent = "Vul eerst je e-mailadres in.";
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: appUrl() });
+  if (error) $("loginErr").textContent = "Versturen mislukt: " + error.message;
+  else okMsg("Als dit adres bestaat, staat er een mail klaar om je wachtwoord te wijzigen.");
+});
+
+$("newPassForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const pw = $("newPass").value;
+  if (pw.length < 6) return $("newPassErr").textContent = "Minstens 6 tekens.";
+  const { data, error } = await sb.auth.updateUser({ password: pw });
+  if (error) return $("newPassErr").textContent = "Opslaan mislukt: " + error.message;
+  recovering = false; toast("Wachtwoord gewijzigd");
+  const { data: s } = await sb.auth.getSession();
+  applySession(s.session);
+});
+
+$("btnGoogle").addEventListener("click", async () => {
+  $("loginErr").textContent = "";
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: appUrl(), queryParams: { prompt: "select_account" } }
+  });
+  if (error) $("loginErr").textContent = "Inloggen met Google mislukt: " + error.message;
+});
+
+async function signOut(){ await stopCamera(); await sb.auth.signOut(); }
+$("btnLogout").addEventListener("click", signOut);
+$("btnLogout2").addEventListener("click", signOut);
+
+let lastUserId = undefined;
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY"){ recovering = true; lastUserId = session?.user?.id ?? null; show("s-newpass"); return; }
+  if (recovering) return;
+  const id = session?.user?.id ?? null;
+  if (id === lastUserId) return;           // token-vernieuwing negeren
+  lastUserId = id;
+  setTimeout(() => applySession(session), 0);
+});
+
+async function applySession(session){
+  if (location.search.includes("code=") || location.hash.includes("access_token"))
+    history.replaceState(null, "", location.pathname);
+  if (!session){ user = null; show("s-login"); return; }
+  user = session.user;
+  show("s-loading");
+  let admin = false;
+  try { admin = await rpc("is_admin"); }
+  catch (e) {
+    show("s-login");
+    const m = String(e && (e.message || e.code) || e);
+    $("loginErr").textContent = /is_admin|function|schema cache|PGRST202|42883/i.test(m)
+      ? "De database is nog niet ingesteld: draai supabase.sql in de SQL Editor van Supabase."
+      : "Geen verbinding met de server (" + m + "). Probeer opnieuw.";
+    return;
+  }
+  if (!admin){ $("noaccessEmail").textContent = user.email || ""; show("s-noaccess"); return; }
+  $("setEmail").textContent = user.email || "—";
+  show("s-app");
+  selectTab("home");
+}
+
+/* =====================================================================
+   TABS
+   ===================================================================== */
+let currentTab = "home";
+document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => selectTab(b.dataset.tab)));
+document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => selectTab(b.dataset.goto)));
+
+function selectTab(name){
+  if (currentTab === "scan" && name !== "scan") stopCamera();
+  currentTab = name;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.id === "tab-" + name));
+  document.querySelectorAll(".tabbar button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  if (name === "home")     loadCards();
+  if (name === "scan")     { if (phase === "scanning") startCamera(); }
+  if (name === "cards")    { closeDetail(); loadCards(); }
+  if (name === "history")  loadHistory();
+}
+
+/* =====================================================================
+   KAARTEN (Start + Kaarten-tab)
+   ===================================================================== */
+let cards = [];
+
+async function loadCards(){
+  try {
+    cards = await rpc("list_cards2") || [];
+    $("homeErr").textContent = "";
+  } catch (e) {
+    $("homeErr").textContent = "Laden mislukt. Controleer je verbinding.";
+  }
+  const avail = cards.filter(c => c.balance_cents > 0).length;
+  $("stTotal").textContent = cards.length;
+  $("stAvail").textContent = avail;
+  $("stUsed").textContent  = cards.length - avail;
+  $("setCount").textContent = cards.length || TOTAL_CARDS;
+  renderCards();
+}
+
+$("cardSearch").addEventListener("input", renderCards);
+
+function renderCards(){
+  const q = $("cardSearch").value.trim();
+  const list = q === "" ? cards : (/^\d+$/.test(q) ? cards.filter(c => c.number === Number(q)) : []);
+  if (!list.length){
+    $("cardsList").innerHTML = '<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="#555"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7z"/></svg><b>Geen kaarten</b></div>';
+    return;
+  }
+  $("cardsList").innerHTML = '<div class="list">' + list.map(c => `
+    <button class="item" data-card="${c.number}">
+      <div class="main"><div class="h">${label(c.number)}</div></div>
+      <span class="money" style="color:${c.balance_cents > 0 ? "var(--gold)" : "var(--invalid)"}">${euro(c.balance_cents)}</span>
+      ${pill(c.balance_cents)}
+      <span class="chev">›</span>
+    </button>`).join("") + "</div>";
+  $("cardsList").querySelectorAll("[data-card]").forEach(b => b.addEventListener("click", () => openDetail(Number(b.dataset.card))));
+}
+const pill = cents => cents > 0 ? '<span class="pill valid">Geldig</span>' : '<span class="pill used">Gebruikt</span>';
+
+function openDetail(number){
+  const c = cards.find(x => x.number === number); if (!c) return;
+  $("cardsListView").classList.add("hidden");
+  const v = $("cardDetailView"); v.classList.remove("hidden");
+  v.innerHTML = `
+    <div><button class="back" id="btnBack">‹ Kaarten</button></div>
+    <div class="detail">
+      <div class="title">${label(c.number)}</div>
+      ${pill(c.balance_cents)}
+      <div style="font-size:28px;font-weight:600;color:${c.balance_cents > 0 ? "var(--gold)" : "var(--invalid)"}">${euro(c.balance_cents)}</div>
+      <div id="qrBox" class="hidden"><div class="qr" id="qr"></div></div>
+      <button class="btn" id="btnQR">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4"/></svg>
+        QR-code tonen</button>
+      <div class="err" id="qrErr"></div>
+      <div class="panel">
+        <div class="kv"><span>Aangemaakt</span><span>${fmtDate(c.created_at)}</span></div>
+        <div class="kv"><span>Saldo</span><span>${euro(c.balance_cents)}</span></div>
+        <div class="kv"><span>Opgebruikt</span><span>${c.balance_cents <= 0 && c.redeemed_at ? fmtDate(c.redeemed_at) : "Nog saldo over"}</span></div>
+      </div>
+      <div class="foot">Elke kaart start met €15,00. Je kunt meerdere keren een bedrag aftrekken tot het saldo op is. Een gekopieerde QR-code maakt nooit een nieuwe kaart.</div>
+    </div>`;
+  $("btnBack").onclick = closeDetail;
+  $("btnQR").onclick = () => showQR(c);
+  $("tab-cards").scrollTop = 0;
+}
+function closeDetail(){ $("cardDetailView").classList.add("hidden"); $("cardsListView").classList.remove("hidden"); }
+
+async function showQR(c){
+  const btn = $("btnQR");
+  if (btn.dataset.ready){ return shareQR(c); }
+  $("qrErr").textContent = "";
+  try {
+    const token = await rpc("card_token2", { p_number: c.number });
+    if (!token) throw new Error("leeg");
+    $("qr").innerHTML = "";
+    new QRCode($("qr"), { text: QR_PREFIX + token, width: 520, height: 520,
+      colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+    $("qrBox").classList.remove("hidden");
+    btn.dataset.ready = "1";
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> QR-code delen / exporteren';
+  } catch {
+    $("qrErr").textContent = "QR laden mislukt. Controleer je verbinding.";
+  }
+}
+
+/** QR met witte rand als PNG delen (iPhone deelmenu) of downloaden */
+async function shareQR(c){
+  const src = $("qr").querySelector("canvas");
+  if (!src) return;
+  const pad = 48, out = document.createElement("canvas");
+  out.width = src.width + pad * 2; out.height = src.height + pad * 2;
+  const ctx = out.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, out.width, out.height);
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(src, pad, pad);
+  const blob = await new Promise(r => out.toBlob(r, "image/png"));
+  const name = `Frituur-${String(c.number).padStart(3, "0")}.png`;
+  const file = new File([blob], name, { type: "image/png" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({ files: [file], title: "CarnavalPass " + label(c.number) });
+      return;
+    }
+  } catch (e) { if (e.name === "AbortError") return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+/* =====================================================================
+   HISTORIE
+   ===================================================================== */
+async function loadHistory(){
+  let log = [];
+  try { log = await rpc("card_history2") || []; }
+  catch {
+    $("historyList").innerHTML = '<div class="err">Historie laden mislukt. Controleer je verbinding.</div>';
+    return;
+  }
+  if (!log.length){
+    $("historyList").innerHTML = '<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><b>Nog geen inwisselingen</b></div>';
+    return;
+  }
+  const map = {
+    redeemed:     ["Afgetrokken", "var(--valid)"],
+    already_used: ["Poging: saldo op", "var(--invalid)"],
+    insufficient: ["Te hoog bedrag", "var(--invalid)"],
+    reset:        ["Gecorrigeerd (admin)", "var(--gold)"]
+  };
+  $("historyList").innerHTML = '<div class="list">' + log.map(l => {
+    const [t, col] = map[l.result] || [l.result, "var(--invalid)"];
+    return `<div class="item">
+      <div class="main">
+        <div class="h">${l.number ? "Kaart " + label(l.number) : "Kaart"}</div>
+        <div class="s">${fmtDate(l.at, true)}${l.by_email ? " · " + esc(l.by_email) : ""}</div>
+      </div>
+      <div class="r"><span style="color:${col}">${esc(t)}</span>
+        ${l.amount_cents != null ? `<span style="color:var(--gold);font-variant-numeric:tabular-nums">${euro(l.amount_cents)}</span>` : ""}</div>
+    </div>`;
+  }).join("") + "</div>";
+}
+
+/* =====================================================================
+   SCANNER
+   ===================================================================== */
+let scanner = null, cameraOn = false, cameraStarting = false;
+let phase = "scanning";            // scanning | checking | result
+let currentToken = null;
+
+const FORMATS = window.Html5QrcodeSupportedFormats ? [
+  Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E, Html5QrcodeSupportedFormats.CODE_128
+] : undefined;
+
+$("btnCamRetry").addEventListener("click", startCamera);
+
+async function startCamera(){
+  if (cameraOn || cameraStarting || currentTab !== "scan") return;
+  cameraStarting = true;
+  $("camOff").classList.add("hidden");
+  $("scanFrame").classList.remove("hidden");
+  try {
+    if (!scanner) scanner = new Html5Qrcode("reader", { formatsToSupport: FORMATS, verbose: false,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
+    const cfg = {
+      fps: 15, disableFlip: true,
+      qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.75); return { width: s, height: s }; },
+      videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 },
+                          advanced: [{ focusMode: "continuous" }] }
+    };
+    try { await scanner.start({ facingMode: "environment" }, cfg, onDecoded, () => {}); }
+    catch (e) {
+      if (/Overconstrained|NotReadable/i.test(String(e)))
+        await scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, onDecoded, () => {});
+      else throw e;
+    }
+    cameraOn = true;
+    setupZoom();
+    if (currentTab !== "scan" || phase !== "scanning") await stopCamera();   // intussen weg-getikt
+  } catch (e) {
+    if (phase !== "scanning" || currentTab !== "scan") return;
+    const m = String(e && e.message || e);
+    $("camMsg").textContent = /Permission|NotAllowed/i.test(m)
+      ? "Sta de camera toe om QR-codes te scannen. Op iPhone: Instellingen → Safari → Camera → Sta toe."
+      : "De camera kon niet starten: " + m;
+    $("camOff").classList.remove("hidden");
+    $("scanFrame").classList.add("hidden");
+  } finally { cameraStarting = false; }
+}
+
+function setupZoom(){
+  $("zoomBox").classList.add("hidden");
+  try {
+    const track = document.querySelector("#reader video")?.srcObject?.getVideoTracks()[0];
+    if (!track?.getCapabilities) return;
+    const caps = track.getCapabilities();
+    if (caps.focusMode?.includes("continuous")) track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
+    if (caps.zoom){
+      const z = $("zoom");
+      z.min = caps.zoom.min; z.max = Math.min(caps.zoom.max, 5); z.step = caps.zoom.step || 0.1; z.value = caps.zoom.min;
+      z.oninput = () => track.applyConstraints({ advanced: [{ zoom: Number(z.value) }] }).catch(() => {});
+      $("zoomBox").classList.remove("hidden");
+    }
+  } catch {}
+}
+
+async function stopCamera(){
+  $("zoomBox").classList.add("hidden");
+  if (scanner && cameraOn){
+    cameraOn = false;
+    try { await scanner.stop(); } catch {}
+    try { scanner.clear(); } catch {}
+  }
+}
+
+/** Eén scan verwerken. Extra detecties worden genegeerd zolang er iets loopt. */
+async function onDecoded(text){
+  if (phase !== "scanning") return;
+  phase = "checking";                      // synchroon → geen dubbele verwerking
+  try { scanner.pause(true); } catch {}
+  stopCamera();
+  $("scanFrame").classList.add("hidden");
+  $("checking").classList.remove("hidden");
+
+  const t = tokenFrom(text.trim());
+  if (!t) return finish({ kind: "invalid" });
+  currentToken = t;
+  finish(await run(() => rpc("verify_card2", { p_token: t })));
+}
+
+async function redeem(cents){
+  if (!currentToken) return;
+  phase = "checking";
+  $("result").classList.add("hidden");
+  $("checking").classList.remove("hidden");
+  const out = await run(() => rpc("redeem_card2", { p_token: currentToken, p_amount: cents }));
+  finish(out);
+  if (out.kind === "redeemed") loadCards();
+}
+
+async function run(work){
+  try {
+    const r = await work();
+    const kinds = { valid: "valid", redeemed: "redeemed", already_used: "alreadyUsed", invalid: "invalid", insufficient: "insufficient" };
+    return { kind: kinds[r?.result] || "invalid", r };
+  } catch (e) {
+    if (e.message === "forbidden") return { kind: "forbidden" };
+    return { kind: "connectionError" };    // nooit goedkeuren bij een fout
+  }
+}
+
+function backToScanner(){
+  currentToken = null; phase = "scanning";
+  $("result").classList.add("hidden");
+  startCamera();
+}
+
+const ICONS = {
+  seal:  '<svg width="72" height="72" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 19.5l-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"/><path d="M8 10.5l2.8 2.8L16.5 7.6" stroke="#08080a" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  check: '<svg width="72" height="72" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#08080a" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  stop:  '<svg width="72" height="72" viewBox="0 0 24 24"><path fill="currentColor" d="M7.9 1h8.2L23 7.9v8.2L16.1 23H7.9L1 16.1V7.9z"/><path d="M8.5 8.5l7 7m0-7l-7 7" stroke="#08080a" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  xmark: '<svg width="72" height="72" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M8.5 8.5l7 7m0-7l-7 7" stroke="#08080a" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  wifi:  '<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 8.8a15 15 0 0 1 16-3.3M5 12.5a10 10 0 0 1 9.5-2.6M8.5 16a5 5 0 0 1 5-1.2"/><path d="M20 10v6M20 19.5v.01"/></svg>',
+  lock:  '<svg width="72" height="72" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>',
+  warn:  '<svg width="72" height="72" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 1 21h22z"/><path d="M12 9v5M12 17.5v.01" stroke="#08080a" stroke-width="2.4" stroke-linecap="round"/></svg>'
+};
+const SPEC = {
+  valid:           ["seal",  "GELDIG",            "var(--valid)",   "Voer het bedrag in dat je van de kaart wilt halen."],
+  redeemed:        ["check", "INGEWISSELD",       "var(--valid)",   "Bedrag succesvol van de kaart afgetrokken."],
+  alreadyUsed:     ["stop",  "SALDO OP",          "var(--invalid)", "Deze kaart heeft geen saldo meer."],
+  invalid:         ["xmark", "ONGELDIG",          "var(--invalid)", "Deze kaart bestaat niet of is niet geldig."],
+  connectionError: ["wifi",  "VERBINDINGSFOUT",   "var(--orange)",  "De controle is mislukt. Kaart NIET goedkeuren; scan opnieuw."],
+  forbidden:       ["lock",  "GEEN TOEGANG",      "var(--invalid)", "Dit account mag geen kaarten controleren."],
+  insufficient:    ["warn",  "ONVOLDOENDE SALDO", "var(--orange)",  "Het bedrag is hoger dan het beschikbare saldo."]
+};
+
+function finish(out){
+  phase = "result";
+  $("checking").classList.add("hidden");
+  $("camOff").classList.add("hidden");
+  const [icon, title, color, text] = SPEC[out.kind];
+  const r = out.r || {};
+  const remaining = r.balance_cents ?? 0;
+  const hasInfo = ["valid", "redeemed", "alreadyUsed", "insufficient"].includes(out.kind) && r.number;
+  const isValid = out.kind === "valid";
+
+  let html = `<div class="grow"></div>
+    <div class="icon" style="color:${color};text-align:center">${ICONS[icon]}</div>
+    <h2 style="color:${color}">${title}</h2>
+    <div class="txt">${text}</div>`;
+  if (hasInfo){
+    html += `<div class="panel">
+      <div class="kv"><span>Kaart</span><span>${label(r.number)}</span></div>
+      <div class="kv"><span>Saldo</span><span>${euro(remaining)}</span></div>
+      ${r.redeemed_at && remaining === 0 ? `<div class="kv"><span>Opgebruikt</span><span>${fmtDate(r.redeemed_at)}</span></div>` : ""}
+    </div>`;
+  }
+  if (isValid){
+    html += `<div style="display:flex;flex-direction:column;gap:10px">
+      <div class="amount"><span>€</span><input id="amount" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+      <div class="hint" id="amountHint">Maximum €15,00 · resterend ${euro(remaining)}</div>
+      <div class="chips">${[100, 250, 500, 1000, 1500].map(c =>
+        `<button data-c="${c}" ${c > remaining ? "disabled" : ""}>${c === 250 ? "€2,50" : "€" + c / 100}</button>`).join("")}</div>
+    </div>`;
+  }
+  html += `<div class="grow"></div>`;
+  if (isValid) html += `<button class="btn green" id="btnRedeem" disabled>Bedrag van de kaart halen</button>`;
+  html += `<button class="btn" id="btnBackScan">Terug naar scanner</button>`;
+
+  const box = $("result");
+  box.innerHTML = html;
+  box.classList.remove("hidden");
+  box.scrollTop = 0;
+  $("btnBackScan").onclick = backToScanner;
+  haptic(["valid", "redeemed"].includes(out.kind) ? "success" : out.kind === "connectionError" ? "warning" : "error");
+
+  if (isValid){
+    const input = $("amount"), hint = $("amountHint"), btn = $("btnRedeem");
+    const parse = () => {
+      const v = Number(input.value.replace(",", ".").trim());
+      if (!isFinite(v) || v <= 0) return null;
+      const c = Math.round(v * 100);
+      return c >= 1 && c <= MAX_CENTS ? c : null;
+    };
+    const update = () => {
+      const c = parse(), empty = input.value.trim() === "";
+      let err = null;
+      if (!empty){
+        if (c == null) err = "Voer een geldig bedrag in (bijv. 2,50)";
+        else if (c > remaining) err = `Hoger dan saldo (${euro(remaining)})`;
+      }
+      hint.className = "hint" + (err ? " bad" : "");
+      hint.textContent = err || `Maximum €15,00 · resterend ${euro(remaining)}`;
+      const ok = c != null && c <= remaining;
+      btn.disabled = !ok;
+      btn.textContent = ok ? `${euro(c)} van de kaart halen` : "Bedrag van de kaart halen";
+    };
+    input.addEventListener("input", update);
+    box.querySelectorAll("[data-c]").forEach(b => b.addEventListener("click", () => {
+      input.value = (Number(b.dataset.c) / 100).toFixed(2).replace(".", ","); update();
+    }));
+    btn.onclick = () => { const c = parse(); if (c != null && c <= remaining){ input.blur(); redeem(c); } };
+  }
+}
+
+/* =====================================================================
+   OVERIG
+   ===================================================================== */
+// Camera uit als de app naar de achtergrond gaat, weer aan bij terugkeer
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopCamera();
+  else if (currentTab === "scan" && phase === "scanning" && user) startCamera();
+});
+// Pinch- en dubbeltik-zoom blokkeren
+document.addEventListener("gesturestart", e => e.preventDefault(), { passive: false });
+let lastTouch = 0;
+document.addEventListener("touchend", e => {
+  if (e.target.closest("input")) return;
+  const now = Date.now(); if (now - lastTouch < 300) e.preventDefault(); lastTouch = now;
+}, { passive: false });
+
+// Start: bewaarde sessie ophalen (blijft ingelogd na sluiten van de app)
+sb.auth.getSession().then(({ data }) => {
+  if (lastUserId === undefined){ lastUserId = data.session?.user?.id ?? null; applySession(data.session); }
+});
+</script>
+</body>
+</html>
