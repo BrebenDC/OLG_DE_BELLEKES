@@ -356,7 +356,7 @@ const TOTAL_CARDS = 10;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
-          storage: window.localStorage, storageKey: "carnavalpass.auth", flowType: "pkce" }
+          storage: window.localStorage, storageKey: "carnavalpass.auth.reeks" + REEKS, flowType: "pkce" }
 });
 
 /* =====================================================================
